@@ -34,14 +34,7 @@
 #include "index_html.h"
 
 #include "secrets.h"
-
-#define BATTERY_VOLTAGE
-
-#define IMPULSE_PER_KWH "1600"
-// ESP Node MCU GPI5 (D1)   ESP-01 GPIO2 2
-#define SENSOR_PIN 5
-#define DEBOUNCE_MIN_MSEC -1
-#define DATA_LEN_MINS 2048
+#include "settings.h"
 
 #ifdef BATTERY_VOLTAGE
 ADC_MODE(ADC_VCC);
@@ -53,7 +46,7 @@ const char* password = STAPSK;
 AsyncWebServer server(80);
 String bufferString;
 
-int int_data[DATA_LEN_MINS];
+int int_data[DATA_LEN_BINS];
 const int data_start_index = 1; // the first value is 0
 int data_len = data_start_index;
 
@@ -63,8 +56,6 @@ unsigned long duration = 0;
 
 const unsigned long durations_len = 128;
 unsigned long durations[durations_len];
-
-#define LED_BLINK_MSEC 100
 
 unsigned long ledTimestamp = 0;
 
@@ -102,7 +93,7 @@ void setup() {
     request->send_P(200, "text/plain", (digitalRead(SENSOR_PIN) == HIGH) ? "HIGH" : "LOW");
   });
   server.on("/battery", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send_P(200, "text/plain", battery_voltage());
+    request->send_P(200, "text/plain", battery_percent());
   });
   server.on("/durations", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", durations_str());
@@ -113,6 +104,9 @@ void setup() {
   server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", reboot());
   });
+  server.on("/bin_seconds", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/plain", BIN_SECONDS);
+  });
 
   server.begin();
 }
@@ -122,10 +116,12 @@ const char* reboot() {
   return ""; // it will not be returned anyway
 }
 
-const char* battery_voltage() {
+const char* battery_percent() {
   #ifdef BATTERY_VOLTAGE
   // with fresh 4 AA getVcc=2.97, before turning off getVcc=2.03
-  bufferString = String(int(ESP.getVcc() / 10.0 - 200));
+  float voltage = ESP.getVcc() / 1000.0;
+  float percent = 100 * (voltage - BATTERY_0_PERCENT_VOLTAGE) / (BATTERY_100_PERCENT_VOLTAGE - BATTERY_0_PERCENT_VOLTAGE);
+  bufferString = String(int(percent));
   #endif
   return bufferString.c_str();
 }

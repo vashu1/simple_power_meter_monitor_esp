@@ -112,14 +112,15 @@
             dt.setSeconds(0);
             dt.setMilliseconds(0);
 
+            const bin_seconds = parseInt(get('/bin_seconds'));
             const impulse = parseInt(get('/impulse_per_kwh'));
-            const wattPerImpulse = 60.0 / impulse * 1000; //TODO read 60 from ESP
+            const wattPerImpulse = (3600.0 / bin_seconds) / impulse * 1000; //TODO read 60 from ESP
 
             //vals = "0 22 1 1 9 12 11 14 11 4 33 7 10 3 0 0 0 0 0".split(' ');//
             vals = get('/data').split(' ');
             vals_len = vals.length;
             
-            vals = vals.map(v => parseInt(v)).map((val, indx) => ({t: new Date(dt - (vals_len - indx) * 60 * 1000).toISOString(), y: val * wattPerImpulse}));
+            vals = vals.map(v => parseInt(v)).map((val, indx) => ({t: new Date(dt - (vals_len - indx) * bin_seconds * 1000).toISOString(), y: val * wattPerImpulse}));
 
             labels = vals.map(v => v.t);
 
