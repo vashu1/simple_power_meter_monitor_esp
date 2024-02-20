@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>ESP Electric Meter Monitor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script>
+        function get(url) {
+            const request = new XMLHttpRequest();
+            request.open("GET", url, false); // `false` makes the request synchronous
+            request.send(null);
+            return request.responseText;
+        }
+
+        window.onload = function() {
+            //setInterval(function(){
+                battery_voltage = get('/battery');
+                if (battery_voltage == "") { // hide battery
+                    document.getElementById("battery_span").parentElement.parentElement.style.display = 'none';
+                } else {
+                    //voltage = parseFloat(battery_voltage);
+                    //percent = (voltage - 2.5) / (3.3 - 2.5) * 100;
+                    document.getElementById("battery_span").setAttribute("style", "width:calc("+parseInt(battery_voltage)+"% * 0.73)");
+                    const c = (window.innerWidth > window.innerHeight) ? 12 : 6;
+                      document.getElementById("battery_span").parentElement.setAttribute("style", "font-size:"+parseInt(window.innerWidth/c)+"px;");
+                      //window.onload = null; // TODO
+                }
+                document.getElementById("wifi_signal").innerHTML = "WiFi: " + get('/wifi_signal');
+            //},1000);
+        }
+    </script>
+    <style>
+.font-150px{font-size: 150px!important;}
+.font-50px{font-size: 50px!important;}
+.font-70px{font-size: 70px!important;}
+
+.fa-battery-filling{
+  position: relative;
+}
+.fa-battery-filling span{
+  position: absolute;
+  background: green;
+  top: 28%;
+  height: 44%;
+  left: 11%;
+  border-radius: 2px;
+  transition: 250ms ease;
+}
+.fa-battery-filling [style="width:calc(1% * 0.73)"],
+.fa-battery-filling [style="width:calc(2% * 0.73)"], 
+.fa-battery-filling [style="width:calc(3% * 0.73)"], 
+.fa-battery-filling [style="width:calc(4% * 0.73)"], 
+.fa-battery-filling [style="width:calc(5% * 0.73)"], 
+.fa-battery-filling [style="width:calc(6% * 0.73)"], 
+.fa-battery-filling [style="width:calc(7% * 0.73)"], 
+.fa-battery-filling [style="width:calc(8% * 0.73)"], 
+.fa-battery-filling [style="width:calc(9% * 0.73)"], 
+.fa-battery-filling [style="width:calc(10% * 0.73)"],
+.fa-battery-filling [style="width:calc(11% * 0.73)"],
+.fa-battery-filling [style="width:calc(12% * 0.73)"],
+.fa-battery-filling [style="width:calc(13% * 0.73)"],
+.fa-battery-filling [style="width:calc(14% * 0.73)"],
+.fa-battery-filling [style="width:calc(15% * 0.73)"],
+.fa-battery-filling [style="width:calc(16% * 0.73)"],
+.fa-battery-filling [style="width:calc(17% * 0.73)"],
+.fa-battery-filling [style="width:calc(18% * 0.73)"],
+.fa-battery-filling [style="width:calc(19% * 0.73)"],
+.fa-battery-filling [style="width:calc(20% * 0.73)"]{
+  background: red;
+}
+.fa-battery-filling [style="width:calc(21% * 0.73)"],
+.fa-battery-filling [style="width:calc(22% * 0.73)"],
+.fa-battery-filling [style="width:calc(23% * 0.73)"],
+.fa-battery-filling [style="width:calc(24% * 0.73)"],
+.fa-battery-filling [style="width:calc(25% * 0.73)"],
+.fa-battery-filling [style="width:calc(26% * 0.73)"],
+.fa-battery-filling [style="width:calc(27% * 0.73)"],
+.fa-battery-filling [style="width:calc(28% * 0.73)"],
+.fa-battery-filling [style="width:calc(29% * 0.73)"],
+.fa-battery-filling [style="width:calc(30% * 0.73)"],
+.fa-battery-filling [style="width:calc(31% * 0.73)"],
+.fa-battery-filling [style="width:calc(32% * 0.73)"],
+.fa-battery-filling [style="width:calc(33% * 0.73)"],
+.fa-battery-filling [style="width:calc(34% * 0.73)"],
+.fa-battery-filling [style="width:calc(35% * 0.73)"],
+.fa-battery-filling [style="width:calc(36% * 0.73)"],
+.fa-battery-filling [style="width:calc(37% * 0.73)"],
+.fa-battery-filling [style="width:calc(38% * 0.73)"],
+.fa-battery-filling [style="width:calc(39% * 0.73)"],
+.fa-battery-filling [style="width:calc(40% * 0.73)"]{
+  background: orange;
+}
+    </style>
+  </head>
+  <body>
+    <p align="right">        
+        <i class="fa fa-battery-empty fa-battery-filling" style="font-size: 444%;" aria-hidden="true">
+            <span id="battery_span" style="width:calc(10% * 0.73)"></span>
+        </i>
+    </p>
+
+    <div class="container">
+        <canvas id="examChart"></canvas>
+    </div>
+
+    <h5 id="wifi_signal" align="right">WiFi:<h5/>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+            
+        <script>
+            dt = new Date()
+            dt.setSeconds(0);
+            dt.setMilliseconds(0);
+
+            const impulse = parseInt(get('/impulse_per_kwh'));
+            const wattPerImpulse = 60.0 / impulse * 1000; //TODO read 60 from ESP
+
+            //vals = "0 22 1 1 9 12 11 14 11 4 33 7 10 3 0 0 0 0 0".split(' ');//
+            vals = get('/data').split(' ');
+            vals_len = vals.length;
+            
+            vals = vals.map(v => parseInt(v)).map((val, indx) => ({t: new Date(dt - (vals_len - indx) * 60 * 1000).toISOString(), y: val * wattPerImpulse}));
+
+            labels = vals.map(v => v.t);
+
+            // https://stackoverflow.com/questions/47875045/chart-js-creating-a-line-graph-using-dates
+            var ctx = document.getElementById("examChart").getContext("2d");
+
+            var myChart = new Chart(ctx, {
+              type: 'line',
+              options: {
+                scales: {
+                  xAxes: [{
+                    type: 'time',
+                  }],
+                  // TODO add y title - needs Chart version upgrade   https://www.chartjs.org/docs/latest/axes/labelling.html
+                  //yAxes: [{
+                  //    title: {display: true, align: 'end', text: 'Watt'}
+                  //}],
+                }
+              },
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: 'ESP Electric Meter Monitor',
+                  data: vals,
+                  backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                  ],
+                  borderColor: [
+                    'rgba(255,99,132,1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                  ],
+                  borderWidth: 1
+                }]
+              }
+            });
+        </script>
+  </body>
+</html>
