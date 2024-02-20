@@ -16,18 +16,18 @@ Connect Arduino photoresistor/photodiode module output to D1 (change SENSOR_PIN 
 
 Run
 
-  cp secrets_example.h secrets.h
+	cp secrets_example.h secrets.h
 
 And add you WiFi and OTA creds to `secrets.h`.
 
 
 Run before compilation and after every change in "index.html"
 
-  python3 convert.py index.html
+	python3 convert.py index.html
 
 that will create `index.html.h` file with `char* index_html` variable.
 
-Upload code to ESP, find out IP in router and open http://fill_esp_ip
+Upload code to ESP, find out IP of your ESP in router and open http://fill_esp_ip
 
 # Common API endpoints:
 
@@ -51,7 +51,7 @@ accumulated data as space separated ints
 
 WiFi and battery levels
 
-Service endpoints:
+# Service endpoints:
 
 	/impulse
 
