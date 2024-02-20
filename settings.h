@@ -11,8 +11,7 @@
 // ESP Node MCU GPI5 (D1)   ESP-01 GPIO2 2
 #define SENSOR_PIN 5
 
-//
-
+// set min/max ADC/1000 battery voltage readings to calibrate battery widget
 #define BATTERY_0_PERCENT_VOLTAGE   2.0
 #define BATTERY_100_PERCENT_VOLTAGE 3.0
 
@@ -20,8 +19,10 @@
 // filter out signals shorter than that
 #define DEBOUNCE_MIN_MSEC -1
 
+// change that to make graph less/more granular
 #define BIN_SECONDS "60"
-//
+
+// how many bins of data we keep
 #define DATA_LEN_BINS 2048
 
 // ESP blinks it's LED for LED_BLINK_MSEC msec after it detects impulse
