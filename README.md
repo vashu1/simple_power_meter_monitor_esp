@@ -4,6 +4,8 @@ That is ESP based menergy meter monitor that reads pulse output (blinking red li
 
 It builds consuption graph in Watts with one minute resolution and shows WiFi signal and battery level. It supports OTA for wireless updates.
 
+![Screenshot](images/esp_monitor_screenshot.png)
+
 If you have solar then check if your meter pulses only during energy import (some pulse during export as well).
 
 # Connections:
