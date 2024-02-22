@@ -59,6 +59,36 @@ unsigned long durations[durations_len];
 
 unsigned long ledTimestamp = 0;
 
+bool powerSaving = false;
+bool wifiOn = true;
+unsigned long powerSavingTimestampDelta = 0;
+
+void WiFiOn() {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+      delay(5000);
+      WiFiOff();
+      WiFiOn();
+  }
+  wifiOn = true;
+}
+
+void WiFiOff() {
+  WiFi.disconnect();
+  WiFi.mode(WIFI_OFF);
+  wifiOn = false;
+}
+
+// https://gist.github.com/chaeplin/be4d9ca41a991aa327bb
+// https://arduino-esp8266.readthedocs.io/en/latest/libraries.html
+// ESP.deepSleepInstant(microseconds, mode) WAKE_RF_DEFAULT WAKE_RF_DISABLED
+// -WAKE_RF_DEFAULT(aka deepsleepsetoption0): do or not do the radio calibration depending on the init byte 108.
+// -WAKE_RFCAL(aka deepsleepsetoption1): do the radio calibration every time.-WAKE_RF_DEFAULT(aka deepsleepsetoption0): do or not do the radio calibration depending on the init byte 108.
+
+// https://arduino.stackexchange.com/questions/43376/can-the-wifi-on-esp8266-be-disabled
+// wifi.setmode(mode[, save])  mode wifi.STATION wifi.NULLMODE
+
 void setup() {
   memset(int_data, 0 , sizeof(int_data));
   //pinMode(0, OUTPUT);
@@ -107,8 +137,27 @@ void setup() {
   server.on("/bin_seconds", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", BIN_SECONDS);
   });
+  server.on("/power_saving_on", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/plain", power_saving_on());
+  });
+  server.on("/power_saving_off", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send_P(200, "text/plain", power_saving_off());
+  });
 
   server.begin();
+}
+
+const char* power_saving_on() {
+  powerSavingTimestampDelta = millis() % (POWER_SAVING_INTERVAL * 1000);
+  powerSaving = true;
+  bufferString = "power_saving_on";
+  return bufferString.c_str();
+}
+
+const char* power_saving_off() {
+  powerSaving = false;
+  bufferString = "power_saving_off";
+  return bufferString.c_str();
 }
 
 const char* reboot() {
@@ -118,9 +167,7 @@ const char* reboot() {
 
 const char* battery_percent() {
   #ifdef BATTERY_VOLTAGE
-  // with fresh 4 AA getVcc=2.97, before turning off getVcc=2.03
-  float voltage = ESP.getVcc() / 1000.0;
-  float percent = 100 * (voltage - BATTERY_0_PERCENT_VOLTAGE) / (BATTERY_100_PERCENT_VOLTAGE - BATTERY_0_PERCENT_VOLTAGE);
+  float percent = 100.0 * (ESP.getVcc() - BATTERY_0_PERCENT_VOLTAGE) / (BATTERY_100_PERCENT_VOLTAGE - BATTERY_0_PERCENT_VOLTAGE);
   bufferString = String(int(percent));
   #endif
   return bufferString.c_str();
@@ -163,9 +210,20 @@ const char* wifi_signal() {
 }
 
 void loop() {
-  ArduinoOTA.handle();
-
   unsigned long currentMillis = millis();
+
+  if (!powerSaving && !wifiOn) WiFiOn();
+
+  if (powerSaving) {
+    if ( (currentMillis - powerSavingTimestampDelta / 1000) % POWER_SAVING_INTERVAL > POWER_SAVING_ACTIVE ) { // wifi off
+      if (wifiOn) WiFiOff();
+    } else { // wifi on
+      if (!wifiOn) WiFiOn();
+    }
+  }
+
+  // OTA
+  ArduinoOTA.handle();
 
   // LED
   digitalWrite(LED_BUILTIN, (ledTimestamp < currentMillis) ? HIGH : LOW); // led pin is reversed? looks like that's the case https://forum.arduino.cc/t/led-builtin-values-are-reversed/1101541
@@ -204,8 +262,6 @@ void loop() {
         ledTimestamp = currentMillis + LED_BLINK_MSEC;
       }
   }
-
-  
 
 
   // GPIO0 / GPIO2 and GPIO15 pins     GPIO15 L on start

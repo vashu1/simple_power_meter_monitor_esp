@@ -11,9 +11,9 @@
 // ESP Node MCU GPI5 (D1)   ESP-01 GPIO2 2
 #define SENSOR_PIN 5
 
-// set min/max ADC/1000 battery voltage readings to calibrate battery widget
-#define BATTERY_0_PERCENT_VOLTAGE   2.0
-#define BATTERY_100_PERCENT_VOLTAGE 3.0
+// set min/max ADC battery voltage readings to calibrate battery widget
+#define BATTERY_0_PERCENT_VOLTAGE   2500
+#define BATTERY_100_PERCENT_VOLTAGE 3000
 
 //TODO
 // filter out signals shorter than that
@@ -27,5 +27,10 @@
 
 // ESP blinks it's LED for LED_BLINK_MSEC msec after it detects impulse
 #define LED_BLINK_MSEC 100
+
+// if "Power Saving" is on the WiFi will be turned on only for POWER_SAVING_ACTIVE seconds
+// once every POWER_SAVING_INTERVAL seconds
+#define POWER_SAVING_INTERVAL 300
+#define POWER_SAVING_ACTIVE    30
 
 #endif//_SETTINGS_H_
